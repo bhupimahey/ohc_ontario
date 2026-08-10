@@ -13,8 +13,6 @@ var pagerTable=$('#customers_table').DataTable({
 			     send_data.filter_search_name    = $("#filter_search_name").val();
 				 send_data.filter_search_mobile  = $("#filter_search_mobile").val();
 				 send_data.filter_daterange      = $("#filter_daterange").val();
-            },
-            error: function(){              
             }
           }
         }); 

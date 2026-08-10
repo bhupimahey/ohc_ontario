@@ -21,8 +21,7 @@ var pagerTable=$('#pendingfee_table').DataTable({
 			"data": function ( send_data ) {
 			     send_data.filter_search_name    = $("#filter_search_name").val();
 				 send_data.filter_daterange  =  $("#filter_daterange").val();
-              },
-            error: function(){  }
+              }
           }
         }); 
   

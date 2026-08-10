@@ -1288,5 +1288,106 @@ $addpayment_link_modal ='<div class="modal fade" tabindex="-1" role="dialog" dat
 			    
 		     }		  
 		   return $records["data"];
-		}	
+		}
+
+    /**
+     * Gross revenue = SUM(jobs.final_amount), same basis as Dashboard Gross Collection.
+     * Grouped weekly or monthly by job_start_date.
+     */
+    private function gross_revenue_period_sql($report_type)
+    {
+        if ($report_type === 'weekly') {
+            return [
+                'display' => "CONCAT(
+                    DATE_FORMAT(DATE_SUB(j.job_start_date, INTERVAL WEEKDAY(j.job_start_date) DAY), '%d %b'),
+                    ' - ',
+                    DATE_FORMAT(DATE_ADD(DATE_SUB(j.job_start_date, INTERVAL WEEKDAY(j.job_start_date) DAY), INTERVAL 6 DAY), '%d %b %Y')
+                )",
+                'key' => 'YEAR(j.job_start_date)*100 + WEEK(j.job_start_date)',
+                'group' => 'YEAR(j.job_start_date), WEEK(j.job_start_date)',
+            ];
+        }
+
+        return [
+            'display' => "DATE_FORMAT(j.job_start_date, '%b %Y')",
+            'key' => 'YEAR(j.job_start_date)*100 + MONTH(j.job_start_date)',
+            'group' => 'YEAR(j.job_start_date), MONTH(j.job_start_date)',
+        ];
+    }
+
+    private function build_gross_revenue_sql($report_type)
+    {
+        $period = $this->gross_revenue_period_sql($report_type);
+
+        return "
+SELECT
+    {$period['display']} AS period,
+    {$period['key']} AS period_key,
+    COUNT(j.jobs_id) AS total_jobs,
+    SUM(j.final_amount) AS gross_revenue
+FROM jobs j
+WHERE j.jobs_id > 0
+  AND j.job_start_date IS NOT NULL
+GROUP BY {$period['group']}
+ORDER BY period_key DESC
+";
+    }
+
+    public function ajax_get_gross_revenue()
+    {
+        $request = \Config\Services::request();
+        $draw = intval($request->getPost('draw'));
+        $start = intval($request->getPost('start'));
+        $length = intval($request->getPost('length'));
+        $report_type = $request->getPost('report_type') ?: 'monthly';
+
+        if ($report_type !== 'weekly') {
+            $report_type = 'monthly';
+        }
+        if ($length < 1) {
+            $length = 10;
+        }
+
+        $sql = $this->build_gross_revenue_sql($report_type);
+        $totalRecords = count($this->db->query($sql)->getResult());
+        $sql .= " LIMIT $start, $length";
+        $result = $this->db->query($sql)->getResultArray();
+
+        $data = [];
+        foreach ($result as $row) {
+            $data[] = [
+                'period' => $row['period'],
+                'total_jobs' => $row['total_jobs'],
+                'gross_revenue' => number_format((float) $row['gross_revenue'], 2),
+            ];
+        }
+
+        return json_encode([
+            'draw' => $draw,
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $totalRecords,
+            'data' => $data,
+        ]);
+    }
+
+    public function export_gross_revenue($report_type)
+    {
+        if ($report_type !== 'weekly') {
+            $report_type = 'monthly';
+        }
+
+        $sql = $this->build_gross_revenue_sql($report_type);
+        $result = $this->db->query($sql)->getResultArray();
+
+        $rows = [];
+        foreach ($result as $row) {
+            $rows[] = [
+                'period' => $row['period'],
+                'total_jobs' => $row['total_jobs'],
+                'gross_revenue' => number_format((float) $row['gross_revenue'], 2),
+            ];
+        }
+
+        return $rows;
+    }
 }

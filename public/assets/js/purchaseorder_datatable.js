@@ -13,8 +13,6 @@ var pagerTable=$('#purchaseorder_table').DataTable({
 			     send_data.filter_vendor_id    = $("#filter_vendor_id").val();
 			     send_data.filter_job_id       = $("#filter_job_id").val();
 			     send_data.filter_daterange    = $("#filter_daterange").val();		
-            },
-            error: function(){              
             }
           },
          footerCallback: function (row, data, start, end, display) {

@@ -39,6 +39,7 @@
                 <li class=" nav-item"><a class="d-flex align-items-center" ><i data-feather="layers"></i><span class="menu-title text-truncate" data-i18n="Email">Reports</span></a> 
 				    <ul class="menu-content">
 				         <li><a class="d-flex align-items-center" href="<?php echo base_url();?>/report/profit_summary"><i data-feather="circle"></i><span class="menu-item text-truncate" data-i18n="List">Profit Summary</span></a></li>
+				         <li><a class="d-flex align-items-center" href="<?php echo base_url();?>/report/gross_revenue"><i data-feather="circle"></i><span class="menu-item text-truncate" data-i18n="List">Gross Revenue</span></a></li>
                       <li><a class="d-flex align-items-center" href="<?php echo base_url();?>/report/pending_payment"><i data-feather="circle"></i><span class="menu-item text-truncate" data-i18n="List">Pending Payments</span></a></li>
                        <li><a class="d-flex align-items-center" href="<?php echo base_url();?>/report/staff_payroll"><i data-feather="circle"></i><span class="menu-item text-truncate" data-i18n="List">Staff Payroll</span></a></li>
                        <li><a class="d-flex align-items-center" href="<?php echo base_url();?>/report/staff_activity"><i data-feather="circle"></i><span class="menu-item text-truncate" data-i18n="List">Staff Activity</span></a></li>

@@ -14,8 +14,6 @@ var pagerTable=$('#users_table').DataTable({
 				 send_data.filter_search_mobile  = $("#filter_search_mobile").val();
 			     send_data.filter_user_role      = $("#filter_user_role").val();
 			    		
-            },
-            error: function(){              
             }
           }
         }); 

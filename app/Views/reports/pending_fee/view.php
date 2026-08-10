@@ -4,7 +4,7 @@
 
 <!-- BEGIN: Body-->
 
-<body class="vertical-layout vertical-menu-modern navbar-floating footer-static menu-collapsed">
+<body class="vertical-layout vertical-menu-modern navbar-floating footer-static" data-open="click" data-menu="vertical-menu-modern" data-col="">
 
     <!-- Admin Header starts -->
 	 <?php echo view('includes/inner_header'); ?>

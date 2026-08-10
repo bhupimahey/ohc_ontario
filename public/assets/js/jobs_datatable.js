@@ -14,8 +14,6 @@ var pagerTable=$('#jobs_table').DataTable({
 				 send_data.filter_user_id      = $("#filter_user_id").val();
 			     send_data.filter_daterange    = $("#filter_daterange").val();
 			     send_data.filter_job_status    = $("#filter_job_status").val();		
-            },
-            error: function(){              
             }
           }
         }); 

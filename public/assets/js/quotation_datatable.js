@@ -13,8 +13,6 @@ var pagerTable=$('#quotation_table').DataTable({
 			     send_data.filter_search_name    = $("#filter_search_name").val();
 				 send_data.filter_search_mobile  = $("#filter_search_mobile").val();
 			    		
-            },
-            error: function(){              
             }
           }
         }); 

@@ -12,8 +12,6 @@ var pagerTable=$('#paymentheads_table').DataTable({
 			"data": function ( send_data ) {
 			  
 			    		
-            },
-            error: function(){              
             }
           }
         }); 

@@ -350,7 +350,51 @@ class Report extends BaseController
 	 {
 		echo $this->ReportModel->ajax_get_profit_summary();		
 	 }
-	 
+
+    public function gross_revenue()
+    {
+        return view('reports/gross_revenue/view', [
+            'message_output' => $this->message_output,
+        ]);
+    }
+
+    function get_gross_revenue()
+    {
+        echo $this->ReportModel->ajax_get_gross_revenue();
+    }
+
+    public function export_gross_revenue()
+    {
+        $report_type = $this->request->getGet('report_type') ?: 'monthly';
+        $report_data = $this->ReportModel->export_gross_revenue($report_type);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Gross Revenue');
+
+        $sheet->setCellValue('A1', 'PERIOD');
+        $sheet->setCellValue('B1', 'TOTAL JOBS');
+        $sheet->setCellValue('C1', 'GROSS REVENUE');
+        $sheet->getStyle('A1:C1')->getFont()->setBold(true);
+
+        $rowNumber = 2;
+        foreach ($report_data as $row) {
+            $sheet->setCellValue('A' . $rowNumber, $row['period']);
+            $sheet->setCellValue('B' . $rowNumber, $row['total_jobs']);
+            $sheet->setCellValue('C' . $rowNumber, $row['gross_revenue']);
+            $rowNumber++;
+        }
+
+        foreach (range('A', 'C') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $fileName = ucfirst($report_type) . ' Gross Revenue Report.xlsx';
+        $writer = new Xlsx($spreadsheet);
+        $writer->save(WRITEPATH . $fileName);
+
+        return $this->response->download(WRITEPATH . $fileName, null);
+    }
 
    function ajax_pendingfee_report_view()
 	 {

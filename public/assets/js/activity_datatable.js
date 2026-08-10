@@ -20,8 +20,6 @@ var pagerTable=$('#activity_table').DataTable({
 			     send_data.filter_staff_id    = $("#filter_staff_id").val();
 				 send_data.filter_daterange  = $("#filter_daterange").val();
 			    		
-            },
-            error: function(){              
             }
           }
         }); 
