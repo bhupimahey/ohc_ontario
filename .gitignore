@@ -1,0 +1,33 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Environment & hosting (never commit production secrets / server rules)
+.env
+.env.*
+!.env.example
+.htaccess
+!.htaccess.example
+.ftpquota
+
+# CodeIgniter writable runtime data
+writable/cache/*
+!writable/cache/index.html
+writable/logs/*
+!writable/logs/index.html
+writable/session/*
+!writable/session/index.html
+writable/debugbar/*
+!writable/debugbar/index.html
+writable/uploads/*
+!writable/uploads/index.html
+
+# Local exports / spreadsheets
+*.xlsx
+
+# Composer (keep lockfile; vendor is deployed for shared hosting)
+# Uncomment the next line if you prefer composer install on the server instead:
+# vendor/
