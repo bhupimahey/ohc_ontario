@@ -6,6 +6,8 @@
     $photo_path    =  $local_session->get('s_photo_path');  
     
     $common_model   = new \App\Models\CommonModel;
+    $renewal_model  = new \App\Models\RenewalModel();
+    $next_renewal   = $renewal_model->getFormattedRenewalDate();
   
 ?>
 <style>
@@ -25,7 +27,7 @@
                 <li class="nav-item dropdown dropdown-user"><a class="nav-link dropdown-toggle dropdown-user-link" id="dropdown-user" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <div class="user-nav d-sm-flex d-none"><span class="user-name fw-bolder">
                             <?php if($s_user_type!='S'){ ?>
-                            <?php echo $s_name;?><?php } else{?> Administrator<?php } ?></span><br><small>Next Renewal On : 05 May,2026</small></div><span class="avatar">
+                            <?php echo $s_name;?><?php } else{?> Administrator<?php } ?></span><br><small>Next Renewal On : <?php echo esc($next_renewal); ?></small></div><span class="avatar">
                             <?php if($photo_path==''){ ?>
                             <img class="round" src="<?php echo base_url();?>/public/app-assets/images/portrait/small/avatar-s-11.jpg" alt="avatar" height="40" width="40">
                             <?php } else{ ?>
