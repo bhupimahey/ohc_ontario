@@ -20,67 +20,106 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup SSH key
+        env:
+          PRD_SSH_KEY: ${{ secrets.PRD_SSH_KEY }}
+          PRD_HOST: ${{ secrets.PRD_HOST }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # Write key with a guaranteed trailing newline
+          printf '%s\n' "$PRD_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Accept host key (cPanel shared hosts often change host keys)
+          ssh-keyscan -H "$PRD_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          # Quick connectivity check
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o BatchMode=yes \
+            "${{ secrets.PRD_USER }}@${PRD_HOST}" \
+            "echo SSH_OK && pwd"
+
       - name: Deploy via rsync to cPanel
-        uses: burnett01/rsync-deployments@v8
-        with:
-          # Sync repo root -> subdomain document root (PRD_APP_DIR).
-          # .env and .htaccess on production are never overwritten or deleted.
-          switches: >-
-            -avzr
-            --delete
-            --exclude='.env'
-            --exclude='.htaccess'
-            --exclude='.git/'
-            --exclude='.github/'
-            --exclude='.gitignore'
-            --exclude='.ftpquota'
-            --exclude='tests/'
-            --exclude='writable/cache/'
-            --exclude='writable/logs/'
-            --exclude='writable/session/'
-            --exclude='writable/debugbar/'
-            --exclude='writable/uploads/'
-            --exclude='*.xlsx'
-          path: ./
-          remote_path: ${{ secrets.PRD_APP_DIR }}
-          remote_host: ${{ secrets.PRD_HOST }}
-          remote_user: ${{ secrets.PRD_USER }}
-          remote_key: ${{ secrets.PRD_SSH_KEY }}
+        env:
+          PRD_HOST: ${{ secrets.PRD_HOST }}
+          PRD_USER: ${{ secrets.PRD_USER }}
+          PRD_APP_DIR: ${{ secrets.PRD_APP_DIR }}
+        run: |
+          set -euo pipefail
 
-      # First-time only: create .env / .htaccess from examples if missing.
-      # Existing production files are never overwritten.
+          # Normalize remote path (no trailing slash for mkdir target; rsync adds content)
+          REMOTE_DIR="${PRD_APP_DIR%/}"
+
+          echo "Deploying repo root -> ${PRD_USER}@${PRD_HOST}:${REMOTE_DIR}/"
+
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            "${PRD_USER}@${PRD_HOST}" \
+            "mkdir -p '${REMOTE_DIR}'"
+
+          rsync -avzr --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes" \
+            --exclude='.env' \
+            --exclude='.htaccess' \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.gitignore' \
+            --exclude='.ftpquota' \
+            --exclude='tests/' \
+            --exclude='writable/cache/' \
+            --exclude='writable/logs/' \
+            --exclude='writable/session/' \
+            --exclude='writable/debugbar/' \
+            --exclude='writable/uploads/' \
+            --exclude='*.xlsx' \
+            ./ \
+            "${PRD_USER}@${PRD_HOST}:${REMOTE_DIR}/"
+
       - name: Seed production .env and .htaccess if missing
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.PRD_HOST }}
-          username: ${{ secrets.PRD_USER }}
-          key: ${{ secrets.PRD_SSH_KEY }}
-          script: |
-            set -e
-            APP_DIR="${{ secrets.PRD_APP_DIR }}"
-            cd "$APP_DIR"
+        env:
+          PRD_HOST: ${{ secrets.PRD_HOST }}
+          PRD_USER: ${{ secrets.PRD_USER }}
+          PRD_APP_DIR: ${{ secrets.PRD_APP_DIR }}
+        run: |
+          set -euo pipefail
+          REMOTE_DIR="${PRD_APP_DIR%/}"
 
-            if [ ! -f .env ]; then
-              if [ -f .env.example ]; then
-                cp .env.example .env
-                echo "Created .env from .env.example"
-              else
-                echo "WARNING: .env missing and .env.example not found"
-              fi
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            "${PRD_USER}@${PRD_HOST}" \
+            "REMOTE_DIR='${REMOTE_DIR}' bash -s" <<'EOF'
+          set -euo pipefail
+          cd "$REMOTE_DIR"
+
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+              echo "Created .env from .env.example"
             else
-              echo "Keeping existing .env"
+              echo "WARNING: .env missing and .env.example not found"
             fi
+          else
+            echo "Keeping existing .env"
+          fi
 
-            if [ ! -f .htaccess ]; then
-              if [ -f .htaccess.example ]; then
-                cp .htaccess.example .htaccess
-                echo "Created .htaccess from .htaccess.example"
-              else
-                echo "WARNING: .htaccess missing and .htaccess.example not found"
-              fi
+          if [ ! -f .htaccess ]; then
+            if [ -f .htaccess.example ]; then
+              cp .htaccess.example .htaccess
+              echo "Created .htaccess from .htaccess.example"
             else
-              echo "Keeping existing .htaccess"
+              echo "WARNING: .htaccess missing and .htaccess.example not found"
             fi
+          else
+            echo "Keeping existing .htaccess"
+          fi
 
-            mkdir -p writable/cache writable/logs writable/session writable/uploads writable/debugbar
-            chmod -R u+rwX writable || true
+          mkdir -p writable/cache writable/logs writable/session writable/uploads writable/debugbar
+          chmod -R u+rwX writable || true
+          EOF
