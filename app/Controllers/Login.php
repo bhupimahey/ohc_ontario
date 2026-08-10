@@ -16,6 +16,7 @@ class Login extends BaseController
 		die();
 	}
 	else{
+	   $renewalModel = new \App\Models\RenewalModel();
 	   //echo password_hash('superadmin', PASSWORD_DEFAULT);	   
 	   if($this->request->getMethod() == 'post'){
 		    $model      = new LoginModel();
@@ -88,6 +89,7 @@ class Login extends BaseController
 		   } 
 		   
 	    $view_data['message_output']  = $this->message_output;
+	    $view_data['next_renewal']    = $renewalModel->getFormattedRenewalDate();
         return view('login', $view_data);
 	}
 	}

@@ -31,6 +31,12 @@ $routes->get('/login', 'Login::index');
 $routes->get('/dashboard', 'Dashboard::index');
 $routes->get('/logout', 'Dashboard::logout');
 
+$routes->get('renewal', 'Renewal::index');
+$routes->post('renewal/unlock', 'Renewal::unlock');
+$routes->get('renewal/manage', 'Renewal::manage');
+$routes->post('renewal/add_payment', 'Renewal::add_payment');
+$routes->get('renewal/lock', 'Renewal::lock');
+
 
 
  /*

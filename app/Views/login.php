@@ -24,6 +24,10 @@
                 <div class="col-12 col-sm-8 col-md-6 col-lg-12 px-xl-2 mx-auto">
                  
                   <p class="card-text mb-2">Please sign-in to your account</p>
+                  <p class="card-text mb-2 text-muted">
+                    Next Renewal On :
+                    <strong><?= esc($next_renewal ?? '05 May,2026'); ?></strong>
+                  </p>
                   <?php echo $message_output->run() ;?>
 				  
 				  <form class="auth-login-form mt-2" action="<?php echo base_url();?>/login" method="POST">
@@ -37,7 +41,10 @@
                       </div>
                     </div>                   
                     <button class="btn btn-primary w-100" tabindex="4">Sign in</button>
-                  </form>               
+                  </form>
+                  <p class="text-center mt-2 mb-0">
+                    <a href="<?php echo base_url('renewal'); ?>">Renewal / AMC</a>
+                  </p>               
                     </div>
               </div>
               <!-- /Login-->
