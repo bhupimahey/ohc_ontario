@@ -41,10 +41,7 @@
                       </div>
                     </div>                   
                     <button class="btn btn-primary w-100" tabindex="4">Sign in</button>
-                  </form>
-                  <p class="text-center mt-2 mb-0">
-                    <a href="<?php echo base_url('renewal'); ?>">Renewal / AMC</a>
-                  </p>               
+                  </form>               
                     </div>
               </div>
               <!-- /Login-->
