@@ -24,43 +24,81 @@ jobs:
         env:
           PRD_SSH_KEY: ${{ secrets.PRD_SSH_KEY }}
           PRD_HOST: ${{ secrets.PRD_HOST }}
+          PRD_USER: ${{ secrets.PRD_USER }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
+          # Normalize host: strip URL scheme, path, quotes, whitespace
+          # PRD_HOST must be hostname or IP only (e.g. bhupimahey.in), not https://...
+          HOST="$PRD_HOST"
+          HOST="${HOST#"${HOST%%[![:space:]]*}"}"
+          HOST="${HOST%"${HOST##*[![:space:]]}"}"
+          HOST="${HOST%\"}"
+          HOST="${HOST#\"}"
+          HOST="${HOST%\'}"
+          HOST="${HOST#\'}"
+          HOST="${HOST#https://}"
+          HOST="${HOST#http://}"
+          HOST="${HOST%%/*}"
+          echo "PRD_HOST length=${#HOST}"
+          if [ -z "$HOST" ]; then
+            echo "ERROR: PRD_HOST secret is empty after normalization"
+            exit 1
+          fi
+          echo "HOST=$HOST" >> "$GITHUB_ENV"
+          echo "USER_NAME=$PRD_USER" >> "$GITHUB_ENV"
+
           # Write key with a guaranteed trailing newline
           printf '%s\n' "$PRD_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
+          # Show key fingerprint only (not private material)
+          ssh-keygen -lf ~/.ssh/deploy_key || {
+            echo "ERROR: PRD_SSH_KEY is not a valid private key"
+            exit 1
+          }
+
           # Accept host key (cPanel shared hosts often change host keys)
-          ssh-keyscan -H "$PRD_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
           # Quick connectivity check
           ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes \
-            "${{ secrets.PRD_USER }}@${PRD_HOST}" \
+            "${PRD_USER}@${HOST}" \
             "echo SSH_OK && pwd"
 
       - name: Deploy via rsync to cPanel
         env:
-          PRD_HOST: ${{ secrets.PRD_HOST }}
-          PRD_USER: ${{ secrets.PRD_USER }}
           PRD_APP_DIR: ${{ secrets.PRD_APP_DIR }}
         run: |
           set -euo pipefail
 
-          # Normalize remote path (no trailing slash for mkdir target; rsync adds content)
-          REMOTE_DIR="${PRD_APP_DIR%/}"
+          # Normalize remote path
+          REMOTE_DIR="$PRD_APP_DIR"
+          REMOTE_DIR="${REMOTE_DIR#"${REMOTE_DIR%%[![:space:]]*}"}"
+          REMOTE_DIR="${REMOTE_DIR%"${REMOTE_DIR##*[![:space:]]}"}"
+          REMOTE_DIR="${REMOTE_DIR%\"}"
+          REMOTE_DIR="${REMOTE_DIR#\"}"
+          REMOTE_DIR="${REMOTE_DIR%\'}"
+          REMOTE_DIR="${REMOTE_DIR#\'}"
+          REMOTE_DIR="${REMOTE_DIR%/}"
 
-          echo "Deploying repo root -> ${PRD_USER}@${PRD_HOST}:${REMOTE_DIR}/"
+          if [ -z "$REMOTE_DIR" ]; then
+            echo "ERROR: PRD_APP_DIR secret is empty"
+            exit 1
+          fi
+
+          echo "Deploying repo root -> ${USER_NAME}@${HOST}:${REMOTE_DIR}/"
+          echo "REMOTE_DIR=$REMOTE_DIR" >> "$GITHUB_ENV"
 
           ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
             -o BatchMode=yes \
-            "${PRD_USER}@${PRD_HOST}" \
+            "${USER_NAME}@${HOST}" \
             "mkdir -p '${REMOTE_DIR}'"
 
           rsync -avzr --delete \
@@ -79,21 +117,16 @@ jobs:
             --exclude='writable/uploads/' \
             --exclude='*.xlsx' \
             ./ \
-            "${PRD_USER}@${PRD_HOST}:${REMOTE_DIR}/"
+            "${USER_NAME}@${HOST}:${REMOTE_DIR}/"
 
       - name: Seed production .env and .htaccess if missing
-        env:
-          PRD_HOST: ${{ secrets.PRD_HOST }}
-          PRD_USER: ${{ secrets.PRD_USER }}
-          PRD_APP_DIR: ${{ secrets.PRD_APP_DIR }}
         run: |
           set -euo pipefail
-          REMOTE_DIR="${PRD_APP_DIR%/}"
 
           ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
             -o BatchMode=yes \
-            "${PRD_USER}@${PRD_HOST}" \
+            "${USER_NAME}@${HOST}" \
             "REMOTE_DIR='${REMOTE_DIR}' bash -s" <<'EOF'
           set -euo pipefail
           cd "$REMOTE_DIR"
